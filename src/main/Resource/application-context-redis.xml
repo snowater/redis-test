@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-3.2.xsd 
+           http://www.springframework.org/schema/context
+           http://www.springframework.org/schema/context/spring-context-3.2.xsd">
+           
+
+           
+    <!-- 配置方法见 http://www.2cto.com/database/201311/254449.html -->
+	<bean id="jedisPoolConfig" class="redis.clients.jedis.JedisPoolConfig">
+		 <property name="maxTotal" value="500"/> <!-- 控制一个pool可分配多少个jedis实例 --> 
+		 <property name="maxIdle" value="100"/><!-- 最大能够保持idel状态的对象数 -->
+		 <property name="maxWaitMillis" value="1000"/><!-- 表示当borrow一个jedis实例时，最大的等待时间，如果超过等待时间，则直接抛出JedisConnectionException --> 
+		 <property name="timeBetweenEvictionRunsMillis" value="30000"/><!-- 多长时间检查一次连接池中空闲的连接 -->
+		 <property name="minEvictableIdleTimeMillis" value="30000"/><!-- 空闲连接多长时间后会被收回, 单位是毫秒 -->
+		 <property name="testOnBorrow" value="true"/>	<!-- 当调用borrow Object方法时，是否进行有效性检查 -->
+		 <property name="testOnReturn" value="true"/>	<!-- 当调用return Object方法时，是否进行有效性检查 -->
+		 <property name="testWhileIdle" value="true"/>
+	 </bean>
+	 
+	<!-- 如果所有sentinel挂掉，会一直尝试重连，sentinel都挂掉也不影响redis操作，因为master地址已经确定 -->
+	<!-- index 0 ${redis.sentinel.monitor.name} 同sentinel.conf里面的name -->	 	
+	<!-- 	
+	<bean id="jedisSentinelPool" class="redis.clients.jedis.JedisSentinelPool">
+		<constructor-arg index="0" value="${redis.sentinel.monitor.name}" />
+		<constructor-arg index="1">
+		     <set>  
+		         <value>${redis.sentinel.instance.1}</value>  
+		         <value>${redis.sentinel.instance.2}</value>  
+		    </set> 
+		</constructor-arg>
+		<constructor-arg index="2" ref="jedisPoolConfig"/>
+		<constructor-arg index="3" value="${redis.sentinel.auth-pass}" />
+	</bean>
+	<bean id="jedisConnectionFactory"  class="com.netease.is.ctu.base.redis.RedisSentinelConnectionFactory" >  
+        <property name="jedisSentinelPool" ref="jedisSentinelPool" />  
+    </bean> 
+    -->	
+    
+    <!-- 直连master -->
+	<bean id="jedisConnectionFactory"
+		class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory">
+		<constructor-arg ref="jedisPoolConfig" />
+		<property name="hostName" value="${redis.hostName}" />
+		<property name="port" value="${redis.port}" />
+		<!-- <property name="password" value ="${redis.password}" /> -->
+	</bean> 
+    
+    <bean id="redisTemplate" class="org.springframework.data.redis.core.StringRedisTemplate" > 
+    	<property name="connectionFactory" ref="jedisConnectionFactory" />  
+    </bean>
+</beans>
